@@ -1,0 +1,27 @@
+name: Container
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 1 * *'
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Clone
+        run: |
+          git clone https://gitlab.com/monolithify/base-images.git
+          pushd base-images
+          git submodule init
+          git submodule update
+          popd
+          mv base-images/* .
+      - name: Login to ghcr.io
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | podman login ghcr.io -u "${{ github.actor }}" --password-stdin
+      - name: Build 9
+        run: |
+          podman build --security-opt=label=disable --cap-add=all --device /dev/fuse -t ghcr.io/charles8191/rocky-bootc-monthly/9 .
+      - name: Push
+        run: |
+          podman push ghcr.io/charles8191/rocky-bootc-monthly/9
